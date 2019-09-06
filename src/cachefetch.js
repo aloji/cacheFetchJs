@@ -1,12 +1,33 @@
-const cacheFetch = (request, cachingDuration) => {
+const cacheFetch = (request, permanent = false, cachingDuration = 30) => {
     if (!window.caches)
         return fetch(request);
 
-    window.aloji = window.aloji || {
-        promises: {}
-    };
+    window.alojiCache = window.alojiCache ||
+    ({
+        promises: {},
+        caches: {
+            cache: {
+                name: '',
+                values: {},
+                match: function (request) {
+                    var r = this.values[request]
+                        ? this.values[request].clone() : null;
+                    return Promise.resolve(r)
+                },
+                put: function (request, response) {
+                    this.values[request] = response;
+                    return Promise.resolve()
+                }
+            },
+            open: function (n) {
+                this.cache.name = n;
+                return Promise.resolve(this.cache)
+            }
+        }
+    });
 
-    cachingDuration = cachingDuration || 30;
+    const caches = (!window.caches || !permanent)
+        ? window.fxsCache.caches : window.caches;
 
     return caches
         .open('aloji')
@@ -22,10 +43,10 @@ const cacheFetch = (request, cachingDuration) => {
                             return cachedResponse;
                         }
                     }
-                    if (!aloji.promises[request]) {
+                    if (!alojiCache.promises[request]) {
                         console.log('Fetching request from the network');
 
-                        aloji.promises[request] = fetch(request)
+                        alojiCache.promises[request] = fetch(request)
                             .then((response) => {
                                 const expires = new Date();
                                 expires.setSeconds(
@@ -44,7 +65,7 @@ const cacheFetch = (request, cachingDuration) => {
                                 return response.blob().then((body) => {
                                     return cache.put(request, new Response(body, cachedFields))
                                         .then(() => {
-                                            delete aloji.promises[request];
+                                            delete alojiCache.promises[request];
 
                                             const jsonBody = respClone.json();
                                             respClone.json = () => jsonBody;
@@ -53,7 +74,7 @@ const cacheFetch = (request, cachingDuration) => {
                                 });
                             });
                     }
-                    return aloji.promises[request];
+                    return alojiCache.promises[request];
                 });
         });
 };
