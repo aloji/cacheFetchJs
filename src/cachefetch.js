@@ -1,7 +1,4 @@
 const cacheFetch = (request, permanent = false, cachingDuration = 30) => {
-    if (!window.caches)
-        return fetch(request);
-
     window.alojiCache = window.alojiCache ||
     ({
         promises: {},
