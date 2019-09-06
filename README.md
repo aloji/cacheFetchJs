@@ -1,5 +1,5 @@
 # cacheFetchJs
-Caching HTTP responses using the Cache API
+Caching HTTP responses using the Cache API or MemoryCache
 
 
 ## Sources
